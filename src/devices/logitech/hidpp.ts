@@ -1162,7 +1162,7 @@ export class LogitechHidppClient {
     if (!feature.index) throw new Error("This mouse does not expose onboard-profile controls.");
     const info = parseProfilesInfo(await this.request(feature.index, PROFILE_FN.getInfo));
     if (!supportsProfileWriteProbe(info.profileFormatId)) {
-      throw new Error(`The guided content probe currently supports profile formats 2, 3, and 4, not ${info.profileFormatId}.`);
+      throw new Error(`The guided content probe currently supports profile formats 2, 3, 4, and 5, not ${info.profileFormatId}.`);
     }
     const sectorSize = info.sectorSize > 0 && info.sectorSize <= 1024 ? info.sectorSize : 255;
     const modeReply = await this.request(feature.index, PROFILE_FN.getMode);
@@ -1204,7 +1204,7 @@ export class LogitechHidppClient {
   ): Promise<ProfileContentWriteProbeReport> {
     await this.open();
     if (!supportsProfileWriteProbe(backup.formatId)) {
-      throw new Error("Only profile formats 2, 3, and 4 are supported by this probe.");
+      throw new Error("Only profile formats 2, 3, 4, and 5 are supported by this probe.");
     }
     const feature = await this.getFeature(FEATURE.onboardProfiles);
     if (!feature.index) throw new Error("This mouse does not expose onboard-profile controls.");

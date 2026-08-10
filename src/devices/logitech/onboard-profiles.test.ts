@@ -21,6 +21,7 @@ import {
   encodeReportRate,
   factoryProfileForFormat,
   supportsFactoryReset,
+  supportsProfileWriteProbe,
   reportRatesFor,
   reportRatesForDevice,
   validateBunnyHoppingMs,
@@ -257,6 +258,83 @@ const G102_LIGHTSYNC_DIRECTORY = (() => {
   sector.set([0x58, 0x7c], sector.length - 2);
   return sector;
 })();
+
+/** HOST_LAYER format-5 capture from a Logitech receiver (PID 0xc547). */
+const HOST_LAYER_INFO_REPLY = bytes(
+  "01 0b 05 01 05 01 05 02 0b 10 00 ff 0a 04 00 00 00 00 00",
+);
+const HOST_LAYER_DIRECTORY = bytes(`
+  00 01 01 00 00 02 00 ff 00 03 00 ff 00 04 00 ff
+  00 05 00 ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff b1 e2
+`);
+const HOST_LAYER_PROFILE_1 = bytes(`
+  01 02 00 20 03 b0 04 40 06 00 00 00 00 ff ff ff
+  ff 00 ff ff ff ff ff ff ff ff ff ff 3c 00 2c 01
+  80 01 00 01 80 01 00 02 80 01 00 04 80 01 00 08
+  90 07 00 00 80 01 00 10 90 01 00 00 90 02 00 00
+  90 0a 00 00 90 03 00 00 90 04 00 00 ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  0f 00 00 00 00 00 00 00 64 00 00 0f 00 00 00 00
+  00 00 00 64 00 00 10 00 00 00 00 00 00 00 64 00
+  00 10 00 00 00 00 00 00 00 64 00 00 03 54 65
+`);
+const HOST_LAYER_PROFILE_2 = bytes(`
+  02 02 00 20 03 b0 04 40 06 60 09 80 0c ff ff ff
+  ff 00 ff ff ff ff ff ff ff ff ff ff 3c 00 2c 01
+  80 01 00 01 80 01 00 02 80 01 00 04 80 01 00 08
+  90 0b 00 00 80 01 00 10 90 01 00 00 90 02 00 00
+  90 0a 00 00 90 03 00 00 90 04 00 00 90 10 00 00
+  90 11 00 00 ff ff ff ff ff ff ff ff ff ff ff ff
+  80 01 00 01 80 01 00 02 80 02 01 17 80 01 00 08
+  ff ff ff ff 80 01 00 10 80 02 03 2b 80 02 01 2b
+  80 02 01 27 80 02 01 1d 80 02 01 1b 80 03 00 ea
+  80 03 00 e9 ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  0f 00 00 00 00 00 00 00 64 00 00 0f 00 00 00 00
+  00 00 00 64 00 00 10 00 00 00 00 00 00 00 64 00
+  00 10 00 00 00 00 00 00 00 64 00 00 03 0b 6e
+`);
+const HOST_LAYER_FACTORY_PROFILE = bytes(`
+  01 02 00 20 03 b0 04 40 06 60 09 80 0c ff ff ff
+  ff 00 ff ff ff ff ff ff ff ff ff ff 3c 00 2c 01
+  80 01 00 01 80 01 00 02 80 01 00 04 80 01 00 08
+  90 07 00 00 80 01 00 10 90 01 00 00 90 02 00 00
+  90 0a 00 00 90 03 00 00 90 04 00 00 ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  0f 00 00 00 00 00 00 00 64 00 00 0f 00 00 00 00
+  00 00 00 64 00 00 10 00 00 00 00 00 00 00 64 00
+  00 10 00 00 00 00 00 00 00 64 00 00 03 94 fb
+`);
 
 test("parses getOnboardProfilesInfo", () => {
   assert.deepEqual(parseProfilesInfo(INFO_REPLY), {
@@ -655,6 +733,95 @@ test("format-4 encoders prepare reversible scalar DPI, shared-rate and name prob
   const named = encodeProfileName(G102_LIGHTSYNC_PROFILE, 4, "OM_VERIFY");
   assert.equal(decodeOnboardProfile(named, 4, { sector: 1, enabled: true }, false).name, "OM_VERIFY");
   assert.equal(profileCrc(named), storedCrc(named));
+});
+
+test("decodes all captured HOST_LAYER format-5 profiles", () => {
+  const sectors = [
+    HOST_LAYER_PROFILE_1,
+    HOST_LAYER_PROFILE_2,
+    HOST_LAYER_FACTORY_PROFILE,
+    HOST_LAYER_FACTORY_PROFILE,
+    HOST_LAYER_FACTORY_PROFILE,
+  ];
+  const expected = [
+    { dpi: [800, 1200, 1600], rate: 1000 },
+    { dpi: [800, 1200, 1600, 2400, 3200], rate: 500 },
+    { dpi: [800, 1200, 1600, 2400, 3200], rate: 1000 },
+    { dpi: [800, 1200, 1600, 2400, 3200], rate: 1000 },
+    { dpi: [800, 1200, 1600, 2400, 3200], rate: 1000 },
+  ];
+
+  sectors.forEach((sector, index) => {
+    const profile = decodeOnboardProfile(
+      sector,
+      5,
+      { sector: index + 1, enabled: index === 0 },
+      false,
+    );
+    assert.equal(sector.length, 255);
+    assert.equal(profile.crcValid, true);
+    assert.equal(profile.name, null);
+    assert.equal(profile.defaultDpiIndex, 2);
+    assert.deepEqual(profile.dpiStages, expected[index].dpi.map((dpi) => ({ x: dpi, y: dpi, lod: 0 })));
+    assert.equal(profile.reportRateWireless, expected[index].rate);
+    assert.equal(profile.reportRateWired, expected[index].rate);
+    assert.equal(profile.angleSnapping, false);
+    assert.equal(profile.powerSaveTimeoutSeconds, 60);
+    assert.equal(profile.powerOffTimeoutSeconds, 300);
+  });
+});
+
+test("verifies the captured HOST_LAYER format-5 geometry and capabilities", () => {
+  assert.deepEqual(
+    { verified: describeProfileFormat(5).verified, writable: describeProfileFormat(5).writable },
+    { verified: true, writable: false },
+  );
+  assert.equal(supportsProfileWriteProbe(5), true);
+  assert.deepEqual(parseProfilesInfo(HOST_LAYER_INFO_REPLY), {
+    memoryModelId: 1,
+    profileFormatId: 5,
+    profileCount: 5,
+    sectorCount: 16,
+    sectorSize: 255,
+  });
+  assert.equal(profileCrc(HOST_LAYER_DIRECTORY), storedCrc(HOST_LAYER_DIRECTORY));
+  assert.deepEqual(parseDirectory(HOST_LAYER_DIRECTORY), [
+    { sector: 1, enabled: true },
+    { sector: 2, enabled: false },
+    { sector: 3, enabled: false },
+    { sector: 4, enabled: false },
+    { sector: 5, enabled: false },
+  ]);
+  const capabilities = capabilitiesForFormat(5);
+  assert.deepEqual(capabilities.dpiStages, { maxStages: 5, minDpi: 100, maxDpi: 25600, stepDpi: 50 });
+  assert.deepEqual(reportRatesFor(capabilities.reportRates, "wireless"), [125, 250, 500, 1000]);
+});
+
+test("format-5 encoders prepare reversible DPI, polling, and name probes", () => {
+  const capabilities = capabilitiesForFormat(5);
+  const original = decodeOnboardProfile(HOST_LAYER_PROFILE_1, 5, { sector: 1, enabled: true }, false);
+  const stages = original.dpiStages.map((stage) => ({ ...stage }));
+  stages[original.defaultDpiIndex!] = { x: 1000, y: 1000, lod: 0 };
+
+  const dpi = encodeDpiStages(
+    HOST_LAYER_PROFILE_1,
+    5,
+    { stages, defaultIndex: original.defaultDpiIndex! },
+    capabilities.dpiStages,
+  );
+  const polling = encodeReportRate(
+    HOST_LAYER_PROFILE_1,
+    5,
+    "wireless",
+    500,
+    capabilities.reportRates,
+  );
+  const named = encodeProfileName(HOST_LAYER_PROFILE_1, 5, "OM_VERIFY", capabilities.maxNameLength);
+
+  assert.equal(decodeOnboardProfile(dpi, 5, { sector: 1, enabled: true }, false).dpiStages[2].x, 1000);
+  assert.equal(decodeOnboardProfile(polling, 5, { sector: 1, enabled: true }, false).reportRateWireless, 500);
+  assert.equal(decodeOnboardProfile(named, 5, { sector: 1, enabled: true }, false).name, "OM_VERIFY");
+  for (const sector of [dpi, polling, named]) assert.equal(profileCrc(sector), storedCrc(sector));
 });
 
 test("factory reset image is exact, CRC-valid and limited to captured geometry", () => {

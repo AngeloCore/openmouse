@@ -47,9 +47,9 @@ const PROFILE_FORMAT_NAMES: Record<number, string> = {
  * Add a format here only after a dump from that device decodes sensibly with a
  * matching CRC.
  */
-const VERIFIED_FORMATS = new Set([2, 3, 4, 7]);
+const VERIFIED_FORMATS = new Set([2, 3, 4, 5, 7]);
 const WRITABLE_FORMATS = new Set([2, 4, 7]);
-const PROFILE_WRITE_PROBE_FORMATS = new Set([2, 3, 4]);
+const PROFILE_WRITE_PROBE_FORMATS = new Set([2, 3, 4, 5]);
 const FACTORY_RESET_FORMATS = new Set([7]);
 
 /** Whether this format has a reversible guided write probe. */
@@ -208,6 +208,18 @@ const FORMAT_CAPABILITIES: Record<number, ProfileFormatCapabilities> = {
     supportedLods: [],
     lodEncoding: LOD_ENCODING,
     dpiStages: { maxStages: 5, minDpi: 50, maxDpi: 8000, stepDpi: 50 },
+    reportRates: { wirelessMaxHz: 1000, wiredMaxHz: 1000 },
+    maxNameLength: PROFILE_NAME_MAX_CHARS,
+    bunnyHop: false,
+  },
+  // HOST_LAYER format 5 was captured through a G-series USB receiver. The
+  // device reported five scalar slots on a 100-25,600 DPI grid in steps of 50
+  // and the legacy 125/250/500/1000 Hz rate bitmap. All five sectors and the
+  // directory passed CRC validation; content writes still need a probe run.
+  5: {
+    supportedLods: [],
+    lodEncoding: LOD_ENCODING,
+    dpiStages: { maxStages: 5, minDpi: 100, maxDpi: 25600, stepDpi: 50 },
     reportRates: { wirelessMaxHz: 1000, wiredMaxHz: 1000 },
     maxNameLength: PROFILE_NAME_MAX_CHARS,
     bunnyHop: false,
